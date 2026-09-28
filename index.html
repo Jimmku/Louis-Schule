@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Wellen entdecken – mit Tönen</title>
+<meta name="theme-color" content="#2f80ed">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Wellen">
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+  :root{
+    --bg:#f5fbff; --card:#ffffff; --ink:#17324d; --muted:#59738c;
+    --accent:#2f80ed; --good:#2f9e44; --warn:#f59f00; --line:#d8e6f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;min-height:100dvh;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(#eaf7ff,#fff);color:var(--ink)}
+  main{max-width:760px;margin:auto;padding:calc(16px + env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) calc(40px + env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+  h1{font-size:clamp(28px,7vw,44px);line-height:1.05;margin:10px 0 6px}
+  h2{font-size:clamp(21px,5vw,28px);margin:0 0 10px}
+  p{line-height:1.5;margin:8px 0;color:var(--muted)}
+  .hero,.card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:0 8px 24px rgba(32,89,127,.08);margin:14px 0}
+  .hero{text-align:center}
+  .pill{display:inline-block;background:#e7f2ff;color:#2367b1;border-radius:999px;padding:6px 10px;font-weight:700;font-size:14px}
+  canvas{width:100%;height:220px;background:#f8fcff;border:1px solid var(--line);border-radius:18px;display:block;margin:12px 0}
+  .control{margin:18px 0}
+  .labelrow{display:flex;justify-content:space-between;gap:12px;align-items:baseline;font-weight:800}
+  .value{font-size:14px;color:var(--accent);font-weight:800}
+  input[type=range]{width:100%;height:48px;accent-color:var(--accent);touch-action:pan-y}
+  .ends{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:-6px}
+  .facts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .fact{padding:12px;border-radius:16px;background:#f4f9fd;border:1px solid var(--line);font-size:14px;line-height:1.35}
+  .fact b{display:block;font-size:16px;color:var(--ink);margin-bottom:3px}
+  button{border:0;border-radius:16px;padding:13px 16px;font:inherit;font-weight:800;background:var(--accent);color:white;min-height:48px;cursor:pointer}
+  button.secondary{background:#eaf3fb;color:var(--ink)}
+  .buttons{display:flex;gap:10px;flex-wrap:wrap}
+  .quiz{background:#fffaf0;border-color:#ffe1a8}
+  .mission{font-size:20px;font-weight:800;color:var(--ink)}
+  .answer{min-height:28px;font-weight:800;margin-top:10px}
+  .good{color:var(--good)} .try{color:#c97700}
+  .meter{height:12px;background:#e7edf2;border-radius:99px;overflow:hidden;margin-top:7px}
+  .meter > div{height:100%;width:50%;background:var(--accent);transition:width .15s}
+  .tiny{font-size:12px;color:#70879b}
+  .footer{text-align:center;color:#7890a5;font-size:13px;margin-top:18px}
+  @media(max-width:520px){.facts{grid-template-columns:1fr}.hero,.card{padding:15px;border-radius:18px}canvas{height:190px}}
+</style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <span class="pill">Für Louis · 10 Jahre</span>
+    <h1>Wellen entdecken 🎵</h1>
+    <p>Bewege die Regler und beobachte: <b>Frequenz</b> verändert die <b>Tonhöhe</b>, <b>Amplitude</b> die <b>Lautstärke</b>.</p>
+  </section>
+
+  <section class="card">
+    <h2>1. Probier es selbst</h2>
+    <canvas id="wave" width="720" height="220" aria-label="Darstellung einer Schallwelle"></canvas>
+
+    <div class="control">
+      <div class="labelrow"><label for="freq">Frequenz</label><span class="value" id="freqText"></span></div>
+      <input id="freq" type="range" min="1" max="10" value="4" step="1" />
+      <div class="ends"><span>wenige Schwingungen · tief</span><span>viele Schwingungen · hoch</span></div>
+    </div>
+
+    <div class="control">
+      <div class="labelrow"><label for="amp">Amplitude</label><span class="value" id="ampText"></span></div>
+      <input id="amp" type="range" min="1" max="10" value="5" step="1" />
+      <div class="ends"><span>klein · leise</span><span>groß · laut</span></div>
+    </div>
+
+    <div class="facts">
+      <div class="fact"><b>Frequenz = Tonhöhe</b>Je mehr Schwingungen in derselben Zeit, desto <b>höher</b> klingt der Ton.</div>
+      <div class="fact"><b>Amplitude = Lautstärke</b>Je größer die Ausschläge der Welle, desto <b>lauter</b> klingt der Ton.</div>
+    </div>
+
+    <div class="buttons" style="margin-top:14px">
+      <button id="soundBtn">▶ Ton anhören</button>
+      <button id="resetBtn" class="secondary">↺ Zurücksetzen</button>
+    </div>
+    <p class="tiny">Hinweis: Der Ton startet erst nach einem Fingertipp – das ist auf Handys aus Sicherheitsgründen so.</p>
+  </section>
+
+  <section class="card quiz">
+    <h2>2. Wellen-Challenge 🧩</h2>
+    <p>Stelle die Regler so ein, dass sie zur Aufgabe passen.</p>
+    <div class="mission" id="mission"></div>
+    <div class="meter" aria-hidden="true"><div id="progress"></div></div>
+    <div class="buttons" style="margin-top:14px">
+      <button id="checkBtn">Prüfen</button>
+      <button id="newBtn" class="secondary">Neue Aufgabe</button>
+    </div>
+    <div class="answer" id="answer"></div>
+  </section>
+
+  <section class="card">
+    <h2>3. Merksatz</h2>
+    <p class="mission">Viele Schwingungen = hoher Ton.<br>Große Ausschläge = lauter Ton.</p>
+    <p>Genau das zeigen auch die Oszilloskopbilder auf deinem Arbeitsblatt.</p>
+  </section>
+
+  <div class="footer">Lernspiel: Schallwellen, Frequenz und Amplitude</div>
+</main>
+
+<script>
+const freq = document.getElementById('freq');
+const amp = document.getElementById('amp');
+const canvas = document.getElementById('wave');
+const ctx = canvas.getContext('2d');
+const freqText = document.getElementById('freqText');
+const ampText = document.getElementById('ampText');
+const missionEl = document.getElementById('mission');
+const answerEl = document.getElementById('answer');
+const progress = document.getElementById('progress');
+
+function pitchWord(v){ return v<=3?'tief':v>=8?'hoch':'mittel'; }
+function loudWord(v){ return v<=3?'leise':v>=8?'laut':'mittel'; }
+function updateTexts(){
+  freqText.textContent = `${freq.value}/10 · ${pitchWord(+freq.value)}`;
+  ampText.textContent = `${amp.value}/10 · ${loudWord(+amp.value)}`;
+}
+function draw(){
+  const w=canvas.width,h=canvas.height, mid=h/2;
+  ctx.clearRect(0,0,w,h);
+  ctx.strokeStyle='#dce9f3'; ctx.lineWidth=1;
+  for(let x=0;x<=w;x+=60){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();}
+  for(let y=20;y<h;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();}
+  ctx.strokeStyle='#8fa7ba';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,mid);ctx.lineTo(w,mid);ctx.stroke();
+  const cycles=1.5+(+freq.value)*0.9;
+  const A=12+(+amp.value)*7.5;
+  ctx.strokeStyle='#2f80ed';ctx.lineWidth=4;ctx.beginPath();
+  for(let x=0;x<=w;x++){
+    const y=mid + Math.sin((x/w)*Math.PI*2*cycles)*A;
+    x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+  updateTexts();
+}
+freq.addEventListener('input',()=>{draw();updateAudio();});
+amp.addEventListener('input',()=>{draw();updateAudio();});
+
+let audioCtx, osc, gain, playing=false;
+function hzFromSlider(v){return 140 + (v-1)*55;}
+function gainFromSlider(v){return 0.015 + v*0.012;}
+function updateAudio(){
+  if(osc){ osc.frequency.setTargetAtTime(hzFromSlider(+freq.value),audioCtx.currentTime,.02); }
+  if(gain){ gain.gain.setTargetAtTime(gainFromSlider(+amp.value),audioCtx.currentTime,.02); }
+}
+document.getElementById('soundBtn').addEventListener('click', async e=>{
+  if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  if(audioCtx.state==='suspended') await audioCtx.resume();
+  if(!playing){
+    osc=audioCtx.createOscillator(); gain=audioCtx.createGain();
+    osc.type='sine'; osc.connect(gain); gain.connect(audioCtx.destination); updateAudio(); osc.start();
+    playing=true; e.target.textContent='■ Ton stoppen';
+  } else {
+    gain.gain.setTargetAtTime(0,audioCtx.currentTime,.02); setTimeout(()=>{try{osc.stop()}catch{} osc=null;gain=null;},80);
+    playing=false; e.target.textContent='▶ Ton anhören';
+  }
+});
+
+document.getElementById('resetBtn').addEventListener('click',()=>{freq.value=4;amp.value=5;draw();updateAudio();answerEl.textContent='';});
+
+const missions=[
+  {text:'Mach einen hohen, leisen Ton.', f:'high', a:'low'},
+  {text:'Mach einen tiefen, lauten Ton.', f:'low', a:'high'},
+  {text:'Mach einen hohen, lauten Ton.', f:'high', a:'high'},
+  {text:'Mach einen tiefen, leisen Ton.', f:'low', a:'low'},
+  {text:'Stelle viele Schwingungen ein, aber nur kleine Ausschläge.', f:'high', a:'low'},
+  {text:'Stelle wenige Schwingungen ein, aber große Ausschläge.', f:'low', a:'high'}
+];
+let current;
+function newMission(){
+  current=missions[Math.floor(Math.random()*missions.length)];
+  missionEl.textContent=current.text; answerEl.textContent=''; progress.style.width='0%';
+}
+function match(type,v){ return type==='high'?v>=8:v<=3; }
+document.getElementById('checkBtn').addEventListener('click',()=>{
+  const fv=+freq.value,av=+amp.value;
+  const fOK=match(current.f,fv),aOK=match(current.a,av);
+  const pct=(fOK?50:0)+(aOK?50:0); progress.style.width=pct+'%';
+  if(fOK&&aOK){
+    answerEl.className='answer good'; answerEl.textContent='Super! 🎉 Frequenz und Amplitude passen.';
+  } else {
+    answerEl.className='answer try';
+    let tips=[]; if(!fOK) tips.push(current.f==='high'?'Frequenz weiter nach rechts → höher':'Frequenz weiter nach links → tiefer');
+    if(!aOK) tips.push(current.a==='high'?'Amplitude weiter nach rechts → lauter':'Amplitude weiter nach links → leiser');
+    answerEl.textContent='Fast! Tipp: '+tips.join(' · ');
+  }
+});
+document.getElementById('newBtn').addEventListener('click',newMission);
+
+draw(); newMission();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
